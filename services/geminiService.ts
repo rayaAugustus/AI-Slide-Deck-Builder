@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Slide } from "../types";
+import { Slide, PresentationStyle } from "../types";
 
 const apiKey = process.env.API_KEY;
 
@@ -8,32 +8,49 @@ if (!apiKey) {
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-types' });
+const modelName = "gemini-2.5-flash";
 
-export const generateSlides = async (topic: string, count: number = 5): Promise<Slide[]> => {
-  const model = "gemini-2.5-flash";
+const getStyleInstructions = (style: PresentationStyle) => {
+  switch (style) {
+    case 'tech-dark':
+      return 'Background: #0f172a or dark gradients. Text: White/Gray-200. Accents: Neon Blue/Purple. Font: Monospace or Inter. Tech, futuristic vibe.';
+    case 'corporate-blue':
+      return 'Background: White. Text: Navy Blue/Black. Accents: Professional Blue. Clean, trustworthy, serif headers possible.';
+    case 'creative-vivid':
+      return 'Background: Bold colors or soft pastels. Typography: Large, expressive. Layout: Asymmetrical. Artistic vibe.';
+    case 'modern-minimal':
+    default:
+      return 'Background: White or very light gray. Typography: Helvetica/Inter. Lots of whitespace. High contrast. Clean grid.';
+  }
+};
+
+export const generateSlides = async (topic: string, style: PresentationStyle, count: number = 5): Promise<Slide[]> => {
+  const styleGuide = getStyleInstructions(style);
   
   const systemInstruction = `
-    You are an expert presentation designer and front-end developer. 
-    Your task is to generate HTML code for presentation slides based on a topic.
+    You are a world-class UI/UX Designer and Frontend Engineer. 
+    Your goal is to kill PowerPoint by creating stunning, HTML-based slides.
     
-    Rules for HTML generation:
-    1. Each slide must be a self-contained HTML fragment suitable for placement inside a 16:9 aspect ratio container (approx 960px x 540px).
-    2. Use inline styles primarily for positioning and colors to ensure portability.
-    3. Use absolute positioning (position: absolute) for elements to allow for drag-and-drop editing later, or simple flexbox layouts.
-    4. Provide placeholder images from https://picsum.photos/400/300 if images are needed.
-    5. Ensure text contrast is accessible.
-    6. Do not include <html>, <head>, or <body> tags. Just the content div's inner HTML.
-    7. Mark editable elements: add 'data-type="text"' to headings/paragraphs, 'data-type="image"' to images.
+    Design Guidelines:
+    1.  Container: 16:9 aspect ratio (approx 960px x 540px).
+    2.  Style: ${styleGuide}
+    3.  Layout: Use Flexbox and Grid heavily for responsive, perfect alignment. DO NOT use random absolute positioning unless creating a specific artistic collage.
+    4.  Typography: Use system fonts (Inter, system-ui, sans-serif). Make headings huge and impactful.
+    5.  Visuals: Use CSS gradients, shadows (box-shadow), and rounded corners (border-radius) to look modern.
+    6.  Images: Use <img src="https://picsum.photos/seed/{random}/800/600" /> for placeholders.
+    7.  Structure: NO <html>, <head>, or <body> tags. Return ONLY the content suitable for inside a <div>.
+    8.  Editability: Mark major text elements with 'data-editable="true"'.
   `;
 
   const prompt = `Create a ${count}-slide presentation about "${topic}". 
-  Return a JSON array where each object has an 'id' (unique string), 'htmlContent' (string), and 'notes' (string for speaker notes).
-  Make the design professional, clean, and modern. Use a color palette that matches the topic.
+  Return a JSON array where each object has 'id', 'htmlContent', and 'notes'.
+  Slide 1 must be a Title Slide. Slide ${count} must be a Conclusion.
+  Intermediate slides should cover key points with varied layouts (split screen, grid, centered statement).
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model,
+      model: modelName,
       contents: prompt,
       config: {
         systemInstruction,
@@ -55,11 +72,40 @@ export const generateSlides = async (topic: string, count: number = 5): Promise<
 
     const jsonText = response.text;
     if (!jsonText) throw new Error("No content generated");
-
-    const slides = JSON.parse(jsonText) as Slide[];
-    return slides;
+    return JSON.parse(jsonText) as Slide[];
   } catch (error) {
     console.error("Error generating slides:", error);
     throw error;
+  }
+};
+
+export const updateSlideContent = async (currentHtml: string, instruction: string): Promise<string> => {
+  const systemInstruction = `
+    You are an AI Design Assistant. Your job is to modify existing HTML slide content based on user instructions.
+    Maintain the existing style/theme unless asked to change it.
+    Improve the layout using Flexbox/Grid.
+    Return ONLY the new HTML string. No Markdown, no JSON.
+  `;
+
+  const prompt = `
+    CURRENT HTML:
+    ${currentHtml}
+
+    USER INSTRUCTION:
+    ${instruction}
+
+    Generate the updated HTML for this slide.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { systemInstruction }
+    });
+    return response.text || currentHtml;
+  } catch (error) {
+    console.error("Error updating slide:", error);
+    return currentHtml;
   }
 };

@@ -14,8 +14,10 @@ export interface SelectionBounds {
 
 export type ToolType = 'select' | 'text' | 'image' | 'rectangle';
 
+export type PresentationStyle = 'modern-minimal' | 'tech-dark' | 'corporate-blue' | 'creative-vivid';
+
 export interface GenerationConfig {
   topic: string;
   slideCount: number;
-  tone: string;
+  style: PresentationStyle;
 }
