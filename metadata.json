@@ -1,0 +1,5 @@
+{
+  "name": "AI Slide Deck Builder",
+  "description": "A WYSIWYG editor for AI-generated HTML presentation slides. Generate decks from prompts, edit content visually, and export.",
+  "requestFramePermissions": []
+}
