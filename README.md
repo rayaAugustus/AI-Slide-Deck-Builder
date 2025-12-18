@@ -1,3 +1,53 @@
+# SlideGen AI - 下一代 HTML 幻灯片所见即所得编辑器
+
+SlideGen AI 是一款颠覆传统 PPT 模式的智能幻灯片构建工具。它利用 Google Gemini API 强大的多模态理解能力，将用户的创意直接转化为精美的、可交互的 HTML/CSS 幻灯片，并提供极致流畅的“无感布局”编辑体验。
+
+## 🌟 项目亮点
+
+-   **AI 全自动生成**：只需输入一个主题，AI 将自动完成内容策划、UI 设计与代码编写，生成一套完整的 16:9 专业级演示文稿。
+-   **WYSIWYG 实时编辑**：所见即所得。双击修改文字，自由拖拽调整位置，无需编写任何 CSS 即可微调布局。
+-   **AI 设计副驾驶 (Co-pilot)**：觉得幻灯片不够美？在侧边栏对 AI 下令（如“改为暗黑科技感风格”、“增加两列布局”），AI 将实时重构 HTML 结构。
+-   **无感拖拽引擎 (Smart Layout)**：针对 Web 幻灯片常见的“布局跳变”痛点，采用 **Relative Positioning（相对定位）** 策略，在移动元素的同时完美保留原始文档流空间，确保相邻元素纹丝不动。
+-   **一键交付**：导出为独立的、单文件的 HTML 离线包，内置演示控制逻辑，随时随地开启演示。
+
+## 🛠️ 技术栈
+
+-   **核心框架**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+-   **AI 模型**: [Google Gemini 2.5 Flash](https://ai.google.dev/) (通过 `@google/genai` 集成)
+-   **样式处理**: [Tailwind CSS](https://tailwindcss.com/) (极致的响应式与组件化样式控制)
+-   **图标系统**: [Lucide React](https://lucide.dev/)
+-   **运行环境**: 现代浏览器原生 ESM 模式 (零构建工具依赖，极速加载)
+
+## 🚀 核心功能详述
+
+### 1. 智能生成 (Generation)
+系统根据用户选择的风格（Minimal, Tech Dark, Corporate, Creative），调用 Gemini 模型生成符合 UI/UX 标准的 HTML 片段。每个片段都经过精心设计，使用 Flexbox 和 Grid 实现像素级的对齐。
+
+### 2. 编辑器技术 (The Editor)
+-   **智能候选选择**: 点击时自动识别最适合编辑的“逻辑元素”（如带渐变背景的标题组），而不是碎碎的文字片段。
+-   **相对位移技术**: 在进行拖拽操作时，我们摒弃了传统的占位符方案，改用 `position: relative` 偏移。这种方式下，元素即使位移，它在文档流中的“物理坑位”依然被保留，彻底解决了相邻元素因空间坍塌而产生的“吸附跳变”问题。
+
+### 3. 演示模式 (Presentation)
+内置 1.25 倍缩放的沉浸式演示界面，支持全屏预览、键盘控制翻页（左右键/空格）以及导出后的完整离线功能。
+
+## 📦 快速开始
+
+1.  **环境要求**: 确保您的环境已配置 `API_KEY` (Google Gemini API)。
+2.  **启动**: 直接在现代浏览器中打开 `index.html` 即可运行（得益于 ESM Import Maps 技术，无需复杂的 `npm install` 流程）。
+3.  **操作建议**:
+    *   **生成**: 在顶部搜索框输入如 "Future of AI in Medicine"。
+    *   **微调**: 双击任何文本块进入编辑模式。
+    *   **排版**: 直接拖拽元素进行位置微调。
+    *   **进化**: 在右侧 AI 助手输入指令，让幻灯片自动演进。
+
+## 🛡️ 设计哲学
+
+> "Don't just move pixels, move ideas." 
+> 我们的目标是让用户关注于内容，而将布局重担、浏览器兼容性和审美决策交给 AI 与这套稳健的编辑器引擎。
+
+---
+© 2024 SlideGen AI Project. Built with Google Gemini API.
+
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
