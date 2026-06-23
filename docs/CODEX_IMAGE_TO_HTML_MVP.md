@@ -1,12 +1,18 @@
-# Codex Task: Image-to-HTML Slide MVP
+# Codex Task: OpenAI GPT-5.5 Image-to-HTML Slide MVP
 
 ## Goal
 
 Build the first monetizable MVP loop for SlideGen AI:
 
-> Upload a PPT screenshot → multimodal AI analyzes layout → generate editable HTML/CSS → preview and export.
+> Upload a PPT screenshot → GPT-5.5 multimodal layout analysis → generate editable HTML/CSS → preview and export.
 
 This is not a full SaaS. Do not add login, database, payments, collaboration, templates, or complex slide-deck management in this task.
+
+## Strategic Decision
+
+Replace Gemini with OpenAI GPT-5.5 for image-to-slide generation.
+
+Do not rewrite the entire editor. Keep the current Vite + React + TypeScript app and replace only the AI provider layer needed for generation.
 
 ## Repository Context
 
@@ -15,11 +21,39 @@ Current project:
 - React 19 + TypeScript
 - Vite
 - Tailwind via CDN/imports
-- Google Gemini via `@google/genai`
-- Main app entry appears to be `App.tsx`
+- Existing app entry appears to be `App.tsx`
 - Existing generation flow is topic-to-slide-deck
+- Existing AI service is Gemini-based and should be replaced or wrapped
 
-This task adds a second generation path: screenshot-to-single-slide HTML.
+This task adds/updates a generation path: screenshot-to-single-slide HTML powered by OpenAI.
+
+## Target Technical Stack
+
+- Frontend: React 19 + TypeScript + Vite
+- AI provider: OpenAI Responses API
+- Model: `gpt-5.5`
+- SDK: official `openai` Node/JS SDK if runtime allows; otherwise call `fetch` to OpenAI Responses API
+- Environment variable: `OPENAI_API_KEY`
+
+Important: do not expose `OPENAI_API_KEY` in browser code.
+
+Because this repo is Vite/browser-first, Codex must choose one safe implementation path:
+
+### Preferred path
+
+Add a minimal server/API route or local API proxy so the browser calls the local backend, and the backend calls OpenAI.
+
+### Acceptable local MVP path
+
+If the project structure makes a server difficult, create a clearly documented `server/` proxy such as:
+
+```text
+server/openaiProxy.ts
+```
+
+and document how to run it alongside Vite.
+
+Do not place the OpenAI API key inside client-side bundled code.
 
 ## User Story
 
@@ -52,15 +86,16 @@ Add a compact panel in the existing app UI:
 ### Frontend
 
 - Add file selection state to `App.tsx` or a small dedicated component.
-- Convert the selected image to base64.
+- Convert the selected image to base64 or data URL.
 - Call a new service function, likely `generateSlideFromImage(imageBase64, mimeType, instruction)`.
+- The frontend service should call the local backend/proxy endpoint, not OpenAI directly.
 - On success, create a `Slide` object:
 
 ```ts
 {
   id: `image-${Date.now()}`,
   htmlContent: generatedHtml,
-  notes: 'Generated from PPT screenshot.'
+  notes: 'Generated from PPT screenshot with GPT-5.5.'
 }
 ```
 
@@ -68,7 +103,14 @@ Add a compact panel in the existing app UI:
 
 ### AI Service
 
-Update or extend `services/geminiService.ts`.
+Replace or extend `services/geminiService.ts` with a provider-neutral service name if practical.
+
+Preferred file names:
+
+```text
+services/openaiService.ts
+server/openaiProxy.ts
+```
 
 Create function:
 
@@ -80,11 +122,39 @@ export async function generateSlideFromImage(
 ): Promise<string>
 ```
 
-The function should call Gemini multimodal API using the existing API key pattern.
+The function should eventually call OpenAI Responses API with model `gpt-5.5` and image input.
 
-### Prompt Requirements
+## OpenAI Request Shape
 
-Use this prompt as the base system/user instruction:
+Use the current OpenAI Responses API image-input style.
+
+Target conceptual structure:
+
+```ts
+const response = await client.responses.create({
+  model: 'gpt-5.5',
+  input: [
+    {
+      role: 'user',
+      content: [
+        { type: 'input_text', text: prompt },
+        {
+          type: 'input_image',
+          image_url: `data:${mimeType};base64,${imageBase64}`
+        }
+      ]
+    }
+  ]
+});
+
+return response.output_text;
+```
+
+If the installed SDK type differs, adapt to the latest OpenAI SDK format while preserving the same intent.
+
+## Prompt Requirements
+
+Use this prompt as the base instruction:
 
 ```text
 你是顶级演示文稿设计师和前端工程师。
@@ -106,11 +176,12 @@ Use this prompt as the base system/user instruction:
 {{instruction}}
 ```
 
-### Model Output Sanitization
+## Model Output Sanitization
 
 - Strip ```html fences if the model returns markdown accidentally.
 - Trim leading/trailing whitespace.
 - If a full HTML document is returned, extract content inside `<body>` when practical, or keep the full document only if existing Canvas can render it safely.
+- Reject or repair empty output.
 
 ## Acceptance Criteria
 
@@ -118,32 +189,36 @@ Use this prompt as the base system/user instruction:
 - `npm run dev` works.
 - User can upload a PNG/JPG screenshot.
 - User can click `Screenshot → HTML`.
-- App calls Gemini multimodal API.
+- App calls OpenAI GPT-5.5 through a backend/proxy, not directly from browser-bundled code.
 - A new generated slide appears in the slide list.
 - The slide can be previewed in the existing canvas.
-- Existing topic-to-deck generation remains functional.
+- Existing topic-to-deck generation remains functional or is clearly marked as legacy if still Gemini-based.
 - No login/database/payment scope is introduced.
 
 ## Implementation Boundaries
 
 Do not migrate the project to Next.js in this task.
 Do not rewrite the whole editor.
-Do not introduce a backend server unless strictly necessary.
-Do not add more models or provider abstractions.
+Do not expose `OPENAI_API_KEY` to client-side code.
 Do not add Supabase.
+Do not add payments.
+Do not build multi-provider abstractions unless it is less than 50 lines and avoids duplication.
 
 ## Suggested Commit Plan
 
-1. `feat: add screenshot upload state and UI`
-2. `feat: add Gemini image-to-slide generation service`
-3. `feat: insert generated screenshot slide into editor`
-4. `chore: document image-to-html MVP workflow`
+1. `chore: add OpenAI SDK and environment example`
+2. `feat: add GPT-5.5 image-to-slide proxy`
+3. `feat: add screenshot upload state and UI`
+4. `feat: insert generated screenshot slide into editor`
+5. `docs: document GPT-5.5 image-to-html MVP workflow`
 
 ## Manual Test Case
 
-1. Start app with `npm run dev`.
-2. Upload any PPT screenshot.
-3. Enter instruction: `保持原布局，但改成更强的科技蓝风格。`
-4. Click `Screenshot → HTML`.
-5. Confirm a new slide appears and renders.
-6. Export HTML and confirm the generated slide is included.
+1. Start backend/proxy if required.
+2. Start app with `npm run dev`.
+3. Set `OPENAI_API_KEY` in `.env.local` or server environment.
+4. Upload any PPT screenshot.
+5. Enter instruction: `保持原布局，但改成更强的科技蓝风格。`
+6. Click `Screenshot → HTML`.
+7. Confirm a new slide appears and renders.
+8. Export HTML and confirm the generated slide is included.
